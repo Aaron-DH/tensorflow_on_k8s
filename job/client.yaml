@@ -64,4 +64,4 @@ spec:
       volumes:
       - name: tfcluster-data-0
         persistentVolumeClaim:
-          claimName: bigdata
+          claimName: pvcvolume
