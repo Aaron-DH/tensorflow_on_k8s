@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  labels:
+    app: tfcluster-tfboard
+    clustername: tfcluster
+  name: tfcluster-tfboard
+  namespace: admin
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tfcluster-tfboard
+        clustername: tfcluster
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cputype
+                operator: In
+                values:
+                - intel-xeon-e5-2620-v4
+              - key: pooltype
+                operator: In
+                values:
+                - shared
+      containers:
+      - env:
+        - name: RESOURCE_TYPE
+          value: tensorboard
+        - name: CLUSTER_NAME
+          value: tfcluster
+        image: tensorflow-cpu:1.12.0
+        imagePullPolicy: IfNotPresent
+        name: tfboard
+        ports:
+        - containerPort: 6006
+          protocol: TCP
+          targetPort: 6006
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /root/tensorflow
+          name: tfcluster-data-0
+      volumes:
+      - name: tfcluster-data-0
+        persistentVolumeClaim:
+          claimName: bigdata

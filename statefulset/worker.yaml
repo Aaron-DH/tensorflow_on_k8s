@@ -1,0 +1,62 @@
+[root@k8s-node1 ~]# cat tfcluster-worker-sts.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: tfcluster-worker
+    clustername: tfcluster
+  name: tfcluster-worker
+  namespace: admin
+spec:
+  replicas: 3
+  serviceName: tfcluster-worker
+  template:
+    metadata:
+      labels:
+        app: tfcluster-worker
+        clustername: tfcluster
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: pooltype
+                operator: In
+                values:
+                - shared
+              - key: gputype
+                operator: In
+                values:
+                - nvidia-geforce-gtx-1080-ti
+      containers:
+      - env:
+        - name: CLUSTER_NAME
+          value: tfcluster
+        - name: CLUSTER_SPEC
+          value: ps|tfcluster-ps-0.tfcluster-ps:2222;tfcluster-ps-1.tfcluster-ps:2222,worker|tfcluster-worker-0.tfcluster-worker:2222;tfcluster-worker-1.tfcluster-worker:2222;tfcluster-worker-2.tfcluster-worker:2222
+        - name: RESOURCE_TYPE
+          value: compute
+        - name: RESOURCE_NAME
+          value: worker
+        image: tensorflow-gpu:1.12.0
+        imagePullPolicy: IfNotPresent
+        name: tfcluster-worker
+        ports:
+        - containerPort: 2222
+          name: tfps
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /root/tensorflow
+          name: tfcluster-data-0
+      volumes:
+      - name: tfcluster-data-0
+        persistentVolumeClaim:
+          claimName: bigdata
